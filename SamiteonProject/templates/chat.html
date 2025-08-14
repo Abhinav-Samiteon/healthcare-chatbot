@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Healthcare Chatbot</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        body {
+            background: #f6f7fb;
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+            margin: 0;
+            padding: 24px;
+        }
+
+        .chat {
+            max-width: 720px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 14px;
+            box-shadow: 0 8px 30px rgba(0,0,0,.06);
+            padding: 18px;
+        }
+
+        .head {
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        #box {
+            height: 420px;
+            overflow: auto;
+            border: 1px solid #eee;
+            border-radius: 10px;
+            padding: 12px;
+            background: #fafbff;
+        }
+
+        .msg {
+            padding: 10px 12px;
+            margin: 6px 0;
+            border-radius: 10px;
+            white-space: pre-wrap;
+            line-height: 1.35;
+        }
+
+        .bot {
+            background: #eef3ff;
+        }
+
+        .me {
+            background: #f3f3f3;
+            text-align: right;
+        }
+
+        form {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        input {
+            flex: 1;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+        }
+
+        button {
+            padding: 10px 14px;
+            border: 0;
+            border-radius: 10px;
+            background: #0b77ff;
+            color: #fff;
+            cursor: pointer;
+        }
+
+            button:disabled {
+                opacity: .6;
+                cursor: not-allowed;
+            }
+
+        .hint {
+            color: #777;
+            font-size: .9rem;
+            margin-top: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat">
+        <div class="head">Healthcare Assistant</div>
+        <div id="box"></div>
+        <form id="f" autocomplete="off">
+            <input id="q" placeholder="Type your message…">
+            <button id="send">Send</button>
+        </form>
+        <div class="hint">Start with: “Boston, MA”, then try “cardio” or “heart doctor”.</div>
+    </div>
+
+    <script>
+        const box = document.getElementById('box');
+        const form = document.getElementById('f');
+        const q = document.getElementById('q');
+        const send = document.getElementById('send');
+
+        function add(text, who = 'bot') {
+            const d = document.createElement('div');
+            d.className = 'msg ' + (who === 'me' ? 'me' : 'bot');
+            d.textContent = text;
+            box.appendChild(d);
+            box.scrollTop = box.scrollHeight;
+        }
+
+        // Clear welcome line matching the new flow
+        add("Please enter your city and state (e.g., Boston, MA).\nThen tell me the kind of doctor or health concern (e.g., cardiology, pediatrics).");
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const text = q.value.trim();
+            if (!text) return;
+
+            add(text, 'me');
+            q.value = '';
+            q.disabled = true;
+            send.disabled = true;
+
+            try {
+                const r = await fetch('/ask', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ question: text })
+                });
+                const data = await r.json();
+                add(data.answer || "Sorry, I didn’t catch that.");
+            } catch (err) {
+                add("Network error. Please try again.");
+            } finally {
+                q.disabled = false;
+                send.disabled = false;
+                q.focus();
+            }
+        });
+    </script>
+</body>
+</html>
